@@ -10,11 +10,10 @@ bot.once("ready", () => {
     console.log("We're ready to go!")
 })
 
+let queue = []
+
 bot.on("message", async message => {
     const ytdl = require("ytdl-core");
-    let queue = {
-        songs: []
-    }
 
     if (!message.guild) return;
 
@@ -22,22 +21,36 @@ bot.on("message", async message => {
     if (message.content.match(/^\$play https:\/\/www.youtube.com\//i)){
 
         if (message.member.voice.channel) {
+            const song = message.content.slice(6)
             const connection = await message.member.voice.channel.join();
-            let song = message.content.slice(6)
-
-            queue.songs.push(song)
-
-            console.log(`I'm going to play ${song}`)
-            const stream = ytdl(song, {filter: "audioonly"})
+            const stream = ytdl(queue[0], {filter: "audioonly"})
             const dispatcher = connection.play(stream)
 
+            console.log(`I'm going to play ${song}`)
+
+            if (queue[0]){
+                queue.push(song)
+            }
+            else {
+                queue.push(song)
+                connection.play(stream)
+            }
+            
             dispatcher.on("finish", () => {
-                console.log("Finished playing the queue songs!")
-                setTimeout( () => {
-                    message.member.voice.channel.leave()
-                }, 3000)
-            })
-    
+                queue.shift()
+
+                if(queue.length >= 1){
+                    message.channel.send(`Next song!`)
+                    connection.play(ytdl(queue[0], {filter: "audioonly"}))
+                    console.log(`Finished playing ${song}`)
+                }
+                else{
+                    setTimeout( () => {
+                        message.member.voice.channel.leave();
+                    }, 3000)
+                }
+            })    
+
     } else {
         message.reply("You have to be in a voice channel!")
         }

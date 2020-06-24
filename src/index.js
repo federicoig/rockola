@@ -44,7 +44,7 @@ bot.on("message", async message => {
 
                         console.log(`I'm going to play ${title}`)
                         message.channel.send(`I'm going to play **${title}!**`)
-                        play(connection, title)  
+                        play(connection)  
                     }
                 }
 
@@ -56,7 +56,7 @@ bot.on("message", async message => {
         }
     }
 
-    function play(connection, song){
+    function play(connection){
 
         const stream = ytdl(queue[0], {filter: "audioonly", highWaterMark: 1<<25})
         connection.play(stream)
@@ -69,7 +69,7 @@ bot.on("message", async message => {
             if(queue.length >= 1){
                 message.channel.send(`Now playing... **${queue[0]}**`)
                 console.log("Next song!")
-                play(connection, song)
+                play(connection)
             }
             else{
                 message.channel.send(`There's no songs left, bye bye`)
@@ -122,7 +122,7 @@ bot.on("message", async message => {
             message.channel.send(`The song has been skipped!`)
 
             const connection = await message.member.voice.channel.join();
-            connection.play(ytdl(queue[0], {filter: "audioonly", highWaterMark: 1<<25}))
+            play(connection)
             
             message.channel.send(`Now playing... **${queue[0]}**`)
         }

@@ -3,6 +3,7 @@ const bot = new Discord.Client();
 
 const config = require("../config/config.json");
 const ytsr = require('ytsr');
+const ytdl = require("ytdl-core");
 
 bot.login(config.token)
 
@@ -12,8 +13,11 @@ bot.once("ready", () => {
 
 let queue = []
 
+function removeSong(){
+    return queue = queue.slice(1)
+}
+
 bot.on("message", async message => {
-    const ytdl = require("ytdl-core");
     bot.user.setActivity("Use $commands"); 
 
     if (!message.guild) return;
@@ -25,49 +29,58 @@ bot.on("message", async message => {
             const song = message.content.slice(6)
 
             ytsr(song, (err, result) => {
-                if (err){
-                    console.log(err)
-                }
-
                 const title = result.items[0].title
                 const url = result.items[0].link
 
-                queue.push(url)
+                function checkQueue(queue){
+                    if(queue.length >= 1){
+                        console.log(`${title} added to queue!`)
+                        message.channel.send(`**${title}** added to queue!`)
 
-                console.log(`${title} added to queue!`)
-                const stream = ytdl(queue[0], {filter: "audioonly"})
+                        queue.push(url)
+                    }
+                    else{
+                        queue.push(url)
 
-                if(queue.length > 1){
-                    message.channel.send(`**${title}** added to queue!`)
+                        console.log(`I'm going to play ${title}`)
+                        message.channel.send(`I'm going to play **${title}!**`)
+                        play(connection, title)  
+                    }
                 }
-                else if (queue.length === 1){
-                    message.channel.send(`I'm going to play **${title}!**`)
-                    connection.play(stream)
 
-                    const dispatcher = connection.play(stream)
-
-                    dispatcher.on("finish", () => {
-                        queue = queue.slice(1)
-        
-                        if(queue[0]){
-                            message.channel.send(`Now playing... **${title}**`)
-                            connection.play(ytdl(queue[0], {filter: "audioonly"}))
-                            console.log(`Finished playing ${title}`)
-                        }
-                        else{
-                            message.channel.send(`There's no songs left, bye bye`)
-                            setTimeout( () => {
-                                message.member.voice.channel.leave();
-                            }, 3000)
-                        }
-                    })    
-                }
+                checkQueue(queue)
             })
-
-    } else {
-        message.reply("You have to be in a voice channel!")
+        }
+        else {
+            message.reply("You have to be in a voice channel!")
         }
     }
+
+    function play(connection, song){
+
+        const stream = ytdl(queue[0], {filter: "audioonly", highWaterMark: 1<<25})
+        connection.play(stream)
+    
+        const dispatcher = connection.play(stream)
+    
+        dispatcher.on("finish", () => {
+            removeSong()
+    
+            if(queue.length >= 1){
+                message.channel.send(`Now playing... **${queue[0]}**`)
+                console.log("Next song!")
+                play(connection, song)
+            }
+            else{
+                message.channel.send(`There's no songs left, bye bye`)
+                
+                setTimeout( () => {
+                    message.member.voice.channel.leave();
+                }, 3000)
+            }
+        })    
+    }
+    
 
     if (message.content.toLowerCase() === "$commands"){
         message.channel.send({embed: {
@@ -100,12 +113,19 @@ bot.on("message", async message => {
     }
 
     if (message.content.toLowerCase() === "$skip"){
-        queue = queue.slice(1)
 
-        message.channel.send(`The song has been skipped!`)
-        
-        const connection = await message.member.voice.channel.join();
-        connection.play(ytdl(queue[0], {filter: "audioonly"}))
+        if (queue.length === 0){
+            message.channel.send(`There are no songs playing right now!`)
+        }
+        else{
+            removeSong()
+            message.channel.send(`The song has been skipped!`)
+
+            const connection = await message.member.voice.channel.join();
+            connection.play(ytdl(queue[0], {filter: "audioonly", highWaterMark: 1<<25}))
+            
+            message.channel.send(`Now playing... **${queue[0]}**`)
+        }
     }
 
     if (message.content.toLowerCase() === "$leave"){
@@ -114,5 +134,4 @@ bot.on("message", async message => {
     }
 
 })
-
 

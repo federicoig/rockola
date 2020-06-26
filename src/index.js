@@ -81,7 +81,6 @@ bot.on("message", async message => {
         })    
     }
     
-
     if (message.content.toLowerCase() === "$commands"){
         message.channel.send({embed: {
             color: 10038562,
@@ -124,12 +123,18 @@ bot.on("message", async message => {
             const connection = await message.member.voice.channel.join();
             play(connection)
             
-            message.channel.send(`Now playing... **${queue[0]}**`)
+            if (queue.length > 0){
+                message.channel.send(`Now playing... **${queue[0]}**`)
+            }
+            else {
+                message.channel.send(`There are no songs left...`)
+            }
         }
     }
 
     if (message.content.toLowerCase() === "$leave"){
         queue = []
+        console.log("I leaved the voice channel!")
         message.member.voice.channel.leave();
     }
 

@@ -1,8 +1,7 @@
 # rockola 📀
 You will need a discord bot to get the token. <br /> 
 
-Create a "config" folder and create the file "config.json" then, inside<br />  
-that file, copy your bot token into an object in config.json
+Create a "config" folder and create the file "config.json" then, inside that file, copy your bot token into an object in config.json
 
 <pre><code> { 
   token:"YOUR-TOKEN"
